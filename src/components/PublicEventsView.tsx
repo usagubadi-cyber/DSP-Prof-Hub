@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 
-import { EVENT_CATEGORIES } from "@/lib/categories";
 import { isEventPast } from "@/lib/dates";
 import type { PublicEvent } from "@/lib/types";
 
@@ -38,23 +37,6 @@ export function PublicEventsView({ events }: PublicEventsViewProps) {
     return { upcoming, past };
   }, [events]);
 
-  const groupedUpcoming = useMemo(() => {
-    const groups = new Map<string, PublicEvent[]>();
-    for (const event of upcoming) {
-      const list = groups.get(event.category) ?? [];
-      list.push(event);
-      groups.set(event.category, list);
-    }
-    const knownFirst = EVENT_CATEGORIES.filter((c) => groups.has(c));
-    const extra = [...groups.keys()].filter(
-      (c) => !(EVENT_CATEGORIES as readonly string[]).includes(c)
-    );
-    return [...knownFirst, ...extra].map((category) => ({
-      category,
-      events: groups.get(category)!,
-    }));
-  }, [upcoming]);
-
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
       <div className="mb-8">
@@ -71,23 +53,14 @@ export function PublicEventsView({ events }: PublicEventsViewProps) {
           No upcoming events right now &mdash; check back soon!
         </div>
       ) : (
-        <div className="space-y-10">
-          {groupedUpcoming.map(({ category, events: categoryEvents }) => (
-            <section key={category}>
-              <h2 className="mb-4 text-lg font-semibold text-navy-800">
-                {category}
-              </h2>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {categoryEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    isPast={false}
-                    onSignUp={setSelectedEvent}
-                  />
-                ))}
-              </div>
-            </section>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {upcoming.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              isPast={false}
+              onSignUp={setSelectedEvent}
+            />
           ))}
         </div>
       )}

@@ -63,7 +63,9 @@ export default async function AdminDashboardPage() {
                   >
                     {event.name}
                   </Link>
-                  <p className="text-xs text-gray-500">{event.category}</p>
+                  {event.major && (
+                    <p className="text-xs text-gray-500">{event.major}</p>
+                  )}
                 </div>
                 <span className="rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-700">
                   {event._count.signups} signup

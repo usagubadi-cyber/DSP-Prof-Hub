@@ -4,7 +4,6 @@ import { useActionState } from "react";
 import type { ReactNode } from "react";
 
 import type { EventFormState } from "@/app/actions/events";
-import { EVENT_CATEGORIES } from "@/lib/categories";
 
 interface EventFormDefaults {
   name: string;
@@ -12,7 +11,7 @@ interface EventFormDefaults {
   time: string;
   location: string;
   description: string;
-  category: string;
+  major: string | null;
   capacity: number | null;
 }
 
@@ -99,23 +98,18 @@ export function EventForm({
       </Field>
 
       <Field
-        label="Category"
-        name="category"
-        error={state.fieldErrors?.category}
+        label="Major (optional)"
+        name="major"
+        error={state.fieldErrors?.major}
+        hint="e.g. Finance, Marketing, Accounting — leave blank if open to all majors"
       >
-        <select
-          id="category"
-          name="category"
-          defaultValue={defaultValues?.category ?? EVENT_CATEGORIES[0]}
-          required
+        <input
+          id="major"
+          name="major"
+          defaultValue={defaultValues?.major ?? ""}
+          placeholder="Finance, Marketing, Accounting"
           className={inputClass}
-        >
-          {EVENT_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        />
       </Field>
 
       <Field
