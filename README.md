@@ -2,8 +2,8 @@
 
 A full-stack event signup and management app for the Delta Sigma Pi chapter,
 built with Next.js (App Router), TypeScript, Tailwind CSS, and Prisma with a
-SQLite database. It ships as a single deployable app — no separate backend
-service required.
+PostgreSQL database. It ships as a single deployable app — no separate
+backend service required.
 
 - **Public site (`/`)** — members browse upcoming events grouped by category,
   see spots remaining, and sign up with just a name plus an email or phone
@@ -16,18 +16,25 @@ service required.
 
 - Next.js 16 (App Router, TypeScript, Server Actions)
 - Tailwind CSS 4
-- Prisma 7 + SQLite (via the `better-sqlite3` driver adapter)
+- Prisma 7 + PostgreSQL (via the `@prisma/adapter-pg` driver adapter)
 - `jose` for signing the admin session cookie (JWT, HS256)
 - `zod` for form validation
 
 ## Getting started
 
-```bash
-npm install
-cp .env.example .env   # then edit the values — see below
-npm run db:migrate     # creates prisma/dev.db and applies the schema
-npm run dev
-```
+1. Get a Postgres database — see [Database](#database) below for options.
+2. Copy the env template and fill in your own values:
+
+   ```bash
+   npm install
+   cp .env.example .env   # then edit DATABASE_URL, ADMIN_PASSWORD, SESSION_SECRET
+   ```
+3. Apply the schema and start the app:
+
+   ```bash
+   npm run db:migrate     # creates the tables in your Postgres database
+   npm run dev
+   ```
 
 Open [http://localhost:3000](http://localhost:3000) for the public site and
 [http://localhost:3000/admin](http://localhost:3000/admin) for the admin
@@ -39,7 +46,7 @@ Set these in `.env` (see `.env.example`):
 
 | Variable          | Description                                                                 |
 | ----------------- | ---------------------------------------------------------------------------- |
-| `DATABASE_URL`    | SQLite connection string. Defaults to `file:./prisma/dev.db`.                 |
+| `DATABASE_URL`    | PostgreSQL connection string. See [Database](#database) below.               |
 | `ADMIN_PASSWORD`  | The single shared password for the `/admin` dashboard.                       |
 | `SESSION_SECRET`  | Random secret used to sign the admin session cookie.                         |
 
@@ -60,40 +67,86 @@ development only — **change it** before sharing a deployed link with anyone.
 
 ## Database
 
-This app uses **SQLite via Prisma** rather than Supabase, so it has zero
-external accounts to set up — the database is just a file
-(`prisma/dev.db`) created automatically by the migration command.
+This app uses **PostgreSQL via Prisma**, which works on any host with a
+persistent filesystem *and* on purely serverless platforms (Vercel,
+Netlify, etc.) — the database lives outside your app's filesystem, so
+there's no ephemeral-disk problem to work around.
 
-Schema (`prisma/schema.prisma`):
+### Getting a Postgres database and setting `DATABASE_URL`
 
-```prisma
-model Event {
-  id          String   @id @default(cuid())
-  name        String
-  date        DateTime
-  time        String
-  location    String
-  description String
-  category    String
-  capacity    Int?
-  createdAt   DateTime @default(now())
-  signups     Signup[]
-}
+Pick any hosted Postgres provider (this app doesn't require anything
+Postgres-specific beyond what Prisma supports). A few common ones and the
+`DATABASE_URL` format each expects:
 
-model Signup {
-  id        String   @id @default(cuid())
-  eventId   String
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  name      String
-  email     String?
-  phone     String?
-  createdAt DateTime @default(now())
-}
+**Supabase** — create a project at [supabase.com](https://supabase.com),
+then go to Project Settings → Database → Connection string → URI. Use the
+**"Transaction pooler"** connection string if your host is serverless
+(port `6543`), or the direct connection (port `5432`) otherwise:
+
+```
+DATABASE_URL="postgresql://postgres.[project-ref]:[password]@[host]:6543/postgres?pgbouncer=true"
+```
+
+**Neon** — create a project at [neon.tech](https://neon.tech), then copy
+the connection string from the dashboard:
+
+```
+DATABASE_URL="postgresql://[user]:[password]@[endpoint].neon.tech/[dbname]?sslmode=require"
+```
+
+**Railway / Render** — provision a Postgres plugin/service; each gives you
+a ready-made connection string in this same format:
+
+```
+DATABASE_URL="postgresql://[user]:[password]@[host]:[port]/[dbname]"
+```
+
+**Self-hosted / plain Postgres** (a VPS, Docker container, etc.):
+
+```
+DATABASE_URL="postgresql://[user]:[password]@[host]:5432/[dbname]"
+```
+
+Whichever provider you choose, put the resulting connection string in
+`.env` as `DATABASE_URL`, then run:
+
+```bash
+npm run db:migrate   # or: npx prisma migrate deploy
+```
+
+This creates the tables for you — you do not need to write any SQL by
+hand. For reference, this is what it creates (see `prisma/schema.prisma`
+and the generated SQL in `prisma/migrations/`):
+
+```sql
+CREATE TABLE "Event" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "time" TEXT NOT NULL,
+    "location" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "capacity" INTEGER,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "Signup" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "eventId" TEXT NOT NULL REFERENCES "Event"("id") ON DELETE CASCADE,
+    "name" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Signup_contact_required" CHECK ("email" IS NOT NULL OR "phone" IS NOT NULL)
+);
+
+CREATE INDEX "Signup_eventId_idx" ON "Signup"("eventId");
 ```
 
 At least one of `email`/`phone` is required on every signup — this is
-enforced both in the signup form validation and with a `CHECK` constraint
-at the database level (see `prisma/migrations/20260903175200_signup_contact_check`).
+enforced both in the signup form validation and with that `CHECK`
+constraint at the database level.
 
 Useful commands:
 
@@ -101,22 +154,6 @@ Useful commands:
 npm run db:migrate   # create a new migration / apply pending ones locally
 npm run db:studio    # open Prisma Studio to browse/edit data visually
 ```
-
-### ⚠️ Deployment note: SQLite needs a persistent disk
-
-SQLite is a great fit for running this app on a normal server, a VPS, or a
-container/host with persistent disk (Railway, Render, Fly.io, a Docker
-container with a volume, etc.) — `npm run build && npm run start` is all
-you need, and your data lives safely in `prisma/dev.db`.
-
-**Avoid deploying this as-is to a purely serverless platform like Vercel or
-Netlify.** Serverless functions there don't share a persistent filesystem
-between invocations (or across multiple instances), so a SQLite file will
-not reliably persist signups. If you need serverless hosting, swap the
-Prisma datasource for a hosted Postgres database (e.g. Supabase, Neon, or
-Vercel Postgres) — the schema and Prisma query code would not need to
-change, only the datasource/adapter setup in `prisma/schema.prisma` and
-`src/lib/prisma.ts`.
 
 ## How key decisions were made
 
@@ -156,5 +193,8 @@ npm run start
 ```
 
 Make sure `DATABASE_URL`, `ADMIN_PASSWORD`, and `SESSION_SECRET` are set as
-environment variables on whatever host you deploy to, and that the
-directory holding the SQLite file persists across deploys/restarts.
+environment variables on whatever host you deploy to. Since the database
+is Postgres (not a local file), this works on serverless platforms
+(Vercel, Netlify) as well as traditional servers/containers — there's no
+persistent-disk requirement for the app itself, only for your Postgres
+provider (which handles that for you).
