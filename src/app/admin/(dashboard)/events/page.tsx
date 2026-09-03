@@ -43,7 +43,7 @@ export default async function AdminEventsPage() {
                   <th className="px-4 py-3">Event</th>
                   <th className="px-4 py-3">Date &amp; Time</th>
                   <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Major</th>
                   <th className="px-4 py-3">Signups</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -62,7 +62,7 @@ export default async function AdminEventsPage() {
                       {event.location}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {event.category}
+                      {event.major ?? "—"}
                     </td>
                     <td className="px-4 py-3">
                       <Link

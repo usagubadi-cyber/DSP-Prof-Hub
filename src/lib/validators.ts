@@ -6,7 +6,7 @@ export const eventFormSchema = z.object({
   time: z.string().regex(/^\d{2}:\d{2}$/, "A valid time is required"),
   location: z.string().trim().min(1, "Location is required").max(200),
   description: z.string().trim().min(1, "Description is required").max(2000),
-  category: z.string().trim().min(1, "Category is required"),
+  major: z.string().trim().max(300).optional().or(z.literal("")),
   capacity: z
     .union([z.literal(""), z.coerce.number().int().positive()])
     .optional(),

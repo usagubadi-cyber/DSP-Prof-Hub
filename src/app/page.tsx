@@ -18,7 +18,7 @@ export default async function HomePage() {
     time: event.time,
     location: event.location,
     description: event.description,
-    category: event.category,
+    major: event.major,
     capacity: event.capacity,
     signupCount: event._count.signups,
   }));

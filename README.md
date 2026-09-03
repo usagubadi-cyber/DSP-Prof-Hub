@@ -5,9 +5,9 @@ built with Next.js (App Router), TypeScript, Tailwind CSS, and Prisma with a
 PostgreSQL database. It ships as a single deployable app — no separate
 backend service required.
 
-- **Public site (`/`)** — members browse upcoming events grouped by category,
-  see spots remaining, and sign up with just a name plus an email or phone
-  number.
+- **Public site (`/`)** — members browse upcoming events (with the relevant
+  major shown when an admin sets one), see spots remaining, and sign up with
+  just a name plus an email or phone number.
 - **Admin dashboard (`/admin`)** — password-protected. Create/edit/delete
   events, view stats, see who signed up for each event, and export signups
   as CSV.
@@ -126,7 +126,7 @@ CREATE TABLE "Event" (
     "time" TEXT NOT NULL,
     "location" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "category" TEXT NOT NULL,
+    "major" TEXT,
     "capacity" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -167,9 +167,11 @@ context):
   the modal shows a clear confirmation message instead. Wiring up an email
   provider (e.g. Resend) later would only require adding a call inside
   `src/app/actions/signups.ts`.
-- **Events are grouped by category** on the public homepage (Career Trek,
-  Grainger Event, Social, Professional Development, Philanthropy, Chapter
-  Business, Other — see `src/lib/categories.ts` to adjust the list).
+- **Events have an optional, free-text "Major" field** instead of a fixed
+  category. Admins type in whichever major(s) an event is relevant to (e.g.
+  "Finance, Marketing, Accounting") — there's no dropdown or preset list, so
+  it can be anything. Leave it blank for events open to all majors. It's
+  shown on the event card when set.
 
 ## Project structure
 

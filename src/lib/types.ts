@@ -5,7 +5,7 @@ export interface PublicEvent {
   time: string;
   location: string;
   description: string;
-  category: string;
+  major: string | null;
   capacity: number | null;
   signupCount: number;
 }

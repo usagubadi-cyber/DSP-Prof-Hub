@@ -17,7 +17,7 @@ model Event {
   time        String
   location    String
   description String
-  category    String
+  major       String?
   capacity    Int?
   createdAt   DateTime @default(now())
   signups     Signup[]

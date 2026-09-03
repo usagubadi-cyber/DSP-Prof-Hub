@@ -19,11 +19,8 @@ export function EventCard({ event, isPast, onSignUp }: EventCardProps) {
           : "border-gray-200 hover:border-gold-500 hover:shadow-md"
       }`}
     >
-      <div className="mb-2 flex items-start justify-between gap-3">
-        <span className="inline-block rounded-full bg-navy-50 px-2.5 py-0.5 text-xs font-medium text-navy-700">
-          {event.category}
-        </span>
-        {!isPast && spotsRemaining != null && (
+      {!isPast && spotsRemaining != null && (
+        <div className="mb-2 flex items-start justify-end">
           <span
             className={`shrink-0 text-xs font-semibold ${
               spotsRemaining <= 0 ? "text-gold-600" : "text-navy-600"
@@ -33,8 +30,8 @@ export function EventCard({ event, isPast, onSignUp }: EventCardProps) {
               ? `${spotsRemaining} spot${spotsRemaining === 1 ? "" : "s"} remaining`
               : "Full"}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <h3 className="text-lg font-semibold text-navy-900">{event.name}</h3>
 
@@ -44,6 +41,11 @@ export function EventCard({ event, isPast, onSignUp }: EventCardProps) {
           {formatEventTime(event.time)}
         </p>
         <p>{event.location}</p>
+        {event.major && (
+          <p className="text-navy-700">
+            <span className="font-medium">Major:</span> {event.major}
+          </p>
+        )}
       </div>
 
       <p className="mt-3 flex-1 text-sm text-gray-700">{event.description}</p>

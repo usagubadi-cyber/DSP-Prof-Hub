@@ -19,14 +19,14 @@ function parseEventForm(formData: FormData) {
     time: String(formData.get("time") ?? ""),
     location: String(formData.get("location") ?? ""),
     description: String(formData.get("description") ?? ""),
-    category: String(formData.get("category") ?? ""),
+    major: String(formData.get("major") ?? ""),
     capacity: String(formData.get("capacity") ?? ""),
   });
 }
 
 function toEventData(parsed: ReturnType<typeof parseEventForm>) {
   if (!parsed.success) throw new Error("invalid event data");
-  const { name, date, time, location, description, category, capacity } =
+  const { name, date, time, location, description, major, capacity } =
     parsed.data;
   return {
     name,
@@ -34,7 +34,7 @@ function toEventData(parsed: ReturnType<typeof parseEventForm>) {
     time,
     location,
     description,
-    category,
+    major: major ? major : null,
     capacity: capacity === "" || capacity === undefined ? null : capacity,
   };
 }

@@ -31,7 +31,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
           time: event.time,
           location: event.location,
           description: event.description,
-          category: event.category,
+          major: event.major,
           capacity: event.capacity,
         }}
       />
