@@ -1,4 +1,4 @@
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "@/generated/prisma/client";
 
@@ -11,7 +11,7 @@ function createPrismaClient() {
   if (!url) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
-  const adapter = new PrismaBetterSqlite3({ url });
+  const adapter = new PrismaPg(url);
   return new PrismaClient({ adapter });
 }
 
