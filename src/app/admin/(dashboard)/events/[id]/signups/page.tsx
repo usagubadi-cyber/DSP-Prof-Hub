@@ -14,7 +14,9 @@ export default async function EventSignupsPage({ params }: SignupsPageProps) {
   const { id } = await params;
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { signups: { orderBy: { createdAt: "asc" } } },
+    include: {
+      signups: { orderBy: { createdAt: "asc" }, include: { member: true } },
+    },
   });
   if (!event) notFound();
 
@@ -68,7 +70,6 @@ export default async function EventSignupsPage({ params }: SignupsPageProps) {
                 <tr>
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Phone</th>
                   <th className="px-4 py-3">Signed Up</th>
                 </tr>
               </thead>
@@ -76,13 +77,10 @@ export default async function EventSignupsPage({ params }: SignupsPageProps) {
                 {event.signups.map((signup) => (
                   <tr key={signup.id}>
                     <td className="px-4 py-3 font-medium text-navy-900">
-                      {signup.name}
+                      {signup.member.name}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {signup.email ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {signup.phone ?? "—"}
+                      {signup.member.email}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">
                       {new Intl.DateTimeFormat("en-US", {

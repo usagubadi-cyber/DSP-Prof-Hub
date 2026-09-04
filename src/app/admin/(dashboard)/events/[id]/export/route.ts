@@ -14,14 +14,22 @@ export async function GET(_request: Request, { params }: RouteContext) {
   const { id } = await params;
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { signups: { orderBy: { createdAt: "asc" } } },
+    include: {
+      signups: { orderBy: { createdAt: "asc" }, include: { member: true } },
+    },
   });
 
   if (!event) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  const csv = signupsToCsv(event.signups);
+  const csv = signupsToCsv(
+    event.signups.map((s) => ({
+      name: s.member.name,
+      email: s.member.email,
+      createdAt: s.createdAt,
+    }))
+  );
   const filename = `${event.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-signups.csv`;
 
   return new NextResponse(csv, {

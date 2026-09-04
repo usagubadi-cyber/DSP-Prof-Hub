@@ -3,19 +3,22 @@
 import { useMemo, useState } from "react";
 
 import { isEventPast } from "@/lib/dates";
-import type { PublicEvent } from "@/lib/types";
+import type { CurrentMember, PublicEvent } from "@/lib/types";
 
+import { AccountModal } from "./AccountModal";
 import { EventCard } from "./EventCard";
-import { SignupModal } from "./SignupModal";
 
 interface PublicEventsViewProps {
   events: PublicEvent[];
+  currentMember: CurrentMember | null;
 }
 
-export function PublicEventsView({ events }: PublicEventsViewProps) {
-  const [selectedEvent, setSelectedEvent] = useState<PublicEvent | null>(
-    null
-  );
+export function PublicEventsView({
+  events,
+  currentMember,
+}: PublicEventsViewProps) {
+  const [accountModalEvent, setAccountModalEvent] =
+    useState<PublicEvent | null>(null);
   const [showPast, setShowPast] = useState(false);
 
   const { upcoming, past } = useMemo(() => {
@@ -44,7 +47,9 @@ export function PublicEventsView({ events }: PublicEventsViewProps) {
           Upcoming Events
         </h1>
         <p className="mt-1 text-gray-600">
-          Sign up below for upcoming Delta Sigma Pi chapter events.
+          {currentMember
+            ? "Sign up below for upcoming Delta Sigma Pi chapter events."
+            : "Create a free account with your name and email, then sign up for as many events as you want."}
         </p>
       </div>
 
@@ -59,7 +64,8 @@ export function PublicEventsView({ events }: PublicEventsViewProps) {
               key={event.id}
               event={event}
               isPast={false}
-              onSignUp={setSelectedEvent}
+              currentMember={currentMember}
+              onRequestAccount={setAccountModalEvent}
             />
           ))}
         </div>
@@ -77,17 +83,22 @@ export function PublicEventsView({ events }: PublicEventsViewProps) {
           {showPast && (
             <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {past.map((event) => (
-                <EventCard key={event.id} event={event} isPast />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  isPast
+                  currentMember={currentMember}
+                />
               ))}
             </div>
           )}
         </div>
       )}
 
-      {selectedEvent && (
-        <SignupModal
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
+      {accountModalEvent && (
+        <AccountModal
+          event={accountModalEvent}
+          onClose={() => setAccountModalEvent(null)}
         />
       )}
     </main>

@@ -23,14 +23,23 @@ model Event {
   signups     Signup[]
 }
 
+model Member {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  signups   Signup[]
+}
+
 model Signup {
   id        String   @id @default(cuid())
   eventId   String
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  name      String
-  email     String?
-  phone     String?
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
+  @@unique([eventId, memberId])
   @@index([eventId])
+  @@index([memberId])
 }

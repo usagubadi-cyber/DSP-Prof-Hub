@@ -7,17 +7,15 @@ function escapeCsvField(value: string): string {
 
 export interface SignupCsvRow {
   name: string;
-  email: string | null;
-  phone: string | null;
+  email: string;
   createdAt: Date;
 }
 
 export function signupsToCsv(signups: SignupCsvRow[]): string {
-  const header = ["Name", "Email", "Phone", "Signed Up At"];
+  const header = ["Name", "Email", "Signed Up At"];
   const rows = signups.map((s) => [
     s.name,
-    s.email ?? "",
-    s.phone ?? "",
+    s.email,
     s.createdAt.toISOString(),
   ]);
   return [header, ...rows]

@@ -6,8 +6,11 @@ PostgreSQL database. It ships as a single deployable app — no separate
 backend service required.
 
 - **Public site (`/`)** — members browse upcoming events (with the relevant
-  major shown when an admin sets one), see spots remaining, and sign up with
-  just a name plus an email or phone number.
+  major shown when an admin sets one) and see spots remaining. The first
+  time someone signs up, they create a lightweight account with just their
+  name and email; after that, a session cookie remembers them so they can
+  sign up for any other event with a single click — no password, no
+  re-entering their info.
 - **Admin dashboard (`/admin`)** — password-protected. Create/edit/delete
   events, view stats, see who signed up for each event, and export signups
   as CSV.
@@ -17,7 +20,7 @@ backend service required.
 - Next.js 16 (App Router, TypeScript, Server Actions)
 - Tailwind CSS 4
 - Prisma 7 + PostgreSQL (via the `@prisma/adapter-pg` driver adapter)
-- `jose` for signing the admin session cookie (JWT, HS256)
+- `jose` for signing the admin and member session cookies (JWT, HS256)
 - `zod` for form validation
 
 ## Getting started
@@ -48,7 +51,7 @@ Set these in `.env` (see `.env.example`):
 | ----------------- | ---------------------------------------------------------------------------- |
 | `DATABASE_URL`    | PostgreSQL connection string. See [Database](#database) below.               |
 | `ADMIN_PASSWORD`  | The single shared password for the `/admin` dashboard.                       |
-| `SESSION_SECRET`  | Random secret used to sign the admin session cookie.                         |
+| `SESSION_SECRET`  | Random secret used to sign the admin and member session cookies.             |
 
 **Change these before deploying anywhere real:**
 
@@ -131,22 +134,29 @@ CREATE TABLE "Event" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE "Member" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL UNIQUE,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE "Signup" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "eventId" TEXT NOT NULL REFERENCES "Event"("id") ON DELETE CASCADE,
-    "name" TEXT NOT NULL,
-    "email" TEXT,
-    "phone" TEXT,
+    "memberId" TEXT NOT NULL REFERENCES "Member"("id") ON DELETE CASCADE,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Signup_contact_required" CHECK ("email" IS NOT NULL OR "phone" IS NOT NULL)
+    UNIQUE ("eventId", "memberId")
 );
 
 CREATE INDEX "Signup_eventId_idx" ON "Signup"("eventId");
+CREATE INDEX "Signup_memberId_idx" ON "Signup"("memberId");
 ```
 
-At least one of `email`/`phone` is required on every signup — this is
-enforced both in the signup form validation and with that `CHECK`
-constraint at the database level.
+A `Signup` links an `Event` to a `Member` — the unique constraint on
+`(eventId, memberId)` is what prevents someone from signing up for the
+same event twice; the app relies on this rather than checking manually,
+so it also holds up under concurrent requests.
 
 Useful commands:
 
@@ -154,6 +164,28 @@ Useful commands:
 npm run db:migrate   # create a new migration / apply pending ones locally
 npm run db:studio    # open Prisma Studio to browse/edit data visually
 ```
+
+## Member accounts (how signup works)
+
+There are no passwords for members — the bar is intentionally low, since
+this just needs to identify who's signing up, not gate access to anything
+sensitive:
+
+1. The first time someone clicks "Sign Up," a modal asks for their **name
+   and email only**. Submitting it creates a `Member` row (or reuses an
+   existing one if that email has signed up before — the name is updated
+   to whatever they just typed, in case of a typo).
+2. A signed, `httpOnly` cookie (`dsp_member_session`, 180-day expiry) then
+   remembers them. From then on, clicking "Sign Up" on any other event is a
+   single click — no form, no modal — because the server already knows who
+   they are.
+3. A small banner at the top of the page shows who's signed in, with a
+   "Not you? Switch account" link that clears the cookie (useful on a
+   shared computer).
+
+Because there's no password, anyone who knows a member's email could
+technically sign up "as" them — an acceptable tradeoff for a low-stakes
+internal signup sheet, but worth knowing if requirements change later.
 
 ## How key decisions were made
 
@@ -163,15 +195,19 @@ context):
 - **Capacity is informational only.** "Spots remaining" is shown on each
   event card, but signups are never blocked once an event is "full" — there
   is no waitlist to manage.
-- **Confirmation is on-screen only.** No email/SMS is sent after signup;
-  the modal shows a clear confirmation message instead. Wiring up an email
-  provider (e.g. Resend) later would only require adding a call inside
-  `src/app/actions/signups.ts`.
+- **Confirmation is on-screen only.** No email/SMS is sent after account
+  creation or signup; the modal shows a clear confirmation message
+  instead. Wiring up an email provider (e.g. Resend) later would only
+  require adding a call inside `src/app/actions/signups.ts`.
 - **Events have an optional, free-text "Major" field** instead of a fixed
   category. Admins type in whichever major(s) an event is relevant to (e.g.
   "Finance, Marketing, Accounting") — there's no dropdown or preset list, so
   it can be anything. Leave it blank for events open to all majors. It's
   shown on the event card when set.
+- **Signups are tied to a lightweight member account** (name + email, no
+  password) instead of asking for contact info on every single signup —
+  the tradeoff being no phone-number option anymore, since the account is
+  keyed by email.
 
 ## Project structure
 

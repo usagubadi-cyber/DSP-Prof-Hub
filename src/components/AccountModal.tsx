@@ -2,20 +2,24 @@
 
 import { useActionState, useEffect } from "react";
 
-import { createSignupAction, type SignupState } from "@/app/actions/signups";
+import {
+  createAccountAndSignupAction,
+  type SignupState,
+} from "@/app/actions/signups";
 import { formatEventDate, formatEventTime } from "@/lib/dates";
 import type { PublicEvent } from "@/lib/types";
 
-interface SignupModalProps {
+interface AccountModalProps {
   event: PublicEvent;
   onClose: () => void;
 }
 
 const initialState: SignupState = { status: "idle" };
 
-export function SignupModal({ event, onClose }: SignupModalProps) {
+export function AccountModal({ event, onClose }: AccountModalProps) {
+  const boundAction = createAccountAndSignupAction.bind(null, event.id);
   const [state, formAction, isPending] = useActionState(
-    createSignupAction,
+    boundAction,
     initialState
   );
 
@@ -35,7 +39,7 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={`Sign up for ${event.name}`}
+        aria-label={`Create an account and sign up for ${event.name}`}
         className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -57,12 +61,16 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-navy-900">
-              You&rsquo;re signed up!
+              You&rsquo;re all set!
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              You&rsquo;re confirmed for <strong>{event.name}</strong> on{" "}
+              Your account is ready and you&rsquo;re confirmed for{" "}
+              <strong>{event.name}</strong> on{" "}
               {formatEventDate(new Date(event.date))} at{" "}
               {formatEventTime(event.time)}.
+            </p>
+            <p className="mt-2 text-sm text-gray-600">
+              You can now sign up for other events with a single click.
             </p>
             <button
               type="button"
@@ -77,9 +85,11 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-navy-900">
-                  Sign Up
+                  Create Your Account
                 </h2>
-                <p className="text-sm text-gray-600">{event.name}</p>
+                <p className="text-sm text-gray-600">
+                  Sign up for {event.name}
+                </p>
               </div>
               <button
                 type="button"
@@ -103,8 +113,6 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
               </button>
             </div>
 
-            <input type="hidden" name="eventId" value={event.id} />
-
             {state.error && (
               <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
                 {state.error}
@@ -123,6 +131,7 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
                   id="name"
                   name="name"
                   required
+                  autoComplete="name"
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                 />
                 {state.fieldErrors?.name && (
@@ -143,6 +152,7 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
                   id="email"
                   name="email"
                   type="email"
+                  required
                   autoComplete="email"
                   className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
                 />
@@ -153,30 +163,10 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
                 )}
               </div>
 
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Phone
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-navy-500 focus:outline-none focus:ring-1 focus:ring-navy-500"
-                />
-                {state.fieldErrors?.phone && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {state.fieldErrors.phone[0]}
-                  </p>
-                )}
-              </div>
-
               <p className="text-xs text-gray-500">
-                Provide at least an email or a phone number so we can
-                confirm your spot.
+                This creates your account — you&rsquo;ll only need to do this
+                once. After this, you can sign up for any event with one
+                click.
               </p>
             </div>
 
@@ -185,7 +175,7 @@ export function SignupModal({ event, onClose }: SignupModalProps) {
               disabled={isPending}
               className="mt-6 w-full rounded-md bg-navy-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? "Signing up..." : "Confirm Signup"}
+              {isPending ? "Signing up..." : "Create Account & Sign Up"}
             </button>
           </form>
         )}
